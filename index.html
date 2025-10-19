@@ -82,7 +82,7 @@
   トランス電圧：<b>DC12V</b>　
   電圧降下定数：<b id="dropConstDisplay">0.00252 V/W・m</b>
 　許容電圧降下：<b id="allowedDropDisplay">1.0V</b><br>
-  トランス定格(W)：
+  トランス容量：
   <select id="transformer">
     <option value="35">35W</option>
     <option value="75">75W</option>
@@ -111,32 +111,27 @@
   <button class="print-btn" onclick="preparePrint()">印刷（PDF保存可）</button>
 </div>
 
+<!-- ✅ 全体結果を常に先頭に表示 -->
 <div id="result"></div>
 
 </footer>
 
 <script>
-  // --- 設定（ユーザー指定） ---
-  const DROP_PER_M = 0.00252; // 電圧降下定数（V/W・m）
-  const ALLOWED_DROP = 1.0;   // 許容電圧降下（V）
-  const TRANSFORMER_USE_RATE = 0.70; // トランス使用可能割合（70%）
-  // --- ここまで ---
-
+  const DROP_PER_M = 0.00252; // 電圧降下定数
+  const ALLOWED_DROP = 1.0;   // 許容電圧降下
+  const TRANSFORMER_USE_RATE = 0.70; // トランス使用可能割合
   const MAX_CIRCUITS = 4;
+
   const circuitsDiv = document.getElementById("circuits");
   const transformerSelect = document.getElementById("transformer");
   const transformerCapacityInfo = document.getElementById("transformerCapacityInfo");
 
-  // 初期表示のトランス使用可能容量を更新
   function updateTransformerCapacityInfo() {
     const rated = parseFloat(transformerSelect.value);
     const usable = (rated * TRANSFORMER_USE_RATE);
     transformerCapacityInfo.textContent = `（使用可能容量: ${usable.toFixed(1)}W）`;
   }
-
-  // セレクト変更で表示を更新
   transformerSelect.addEventListener("change", updateTransformerCapacityInfo);
-  // 初期呼び出し
   updateTransformerCapacityInfo();
 
   function addCircuit() {
@@ -207,11 +202,13 @@
     });
   }
 
+  // ✅ 全体結果を常に先頭に表示するバージョン
   function calc() {
     let totalW = 0;
+    let circuitsHtml = "";
     let resultHtml = "<h2>計算結果</h2>";
 
-    const ratedTransformer = parseFloat(transformerSelect.value); // 例：35 or 75
+    const ratedTransformer = parseFloat(transformerSelect.value);
     const usableTransformer = ratedTransformer * TRANSFORMER_USE_RATE;
     const circuits = document.querySelectorAll(".circuit");
 
@@ -226,7 +223,6 @@
         const w = parseFloat(r.querySelector(".watt").value) || 0;
         const len = parseFloat(r.querySelector(".len").value) || 0;
         const drop = w * len * DROP_PER_M;
-
         circuitW += w;
         circuitDrop += drop;
 
@@ -241,7 +237,8 @@
       });
 
       totalW += circuitW;
-      resultHtml += `
+
+      circuitsHtml += `
         <h3>ライン ${cIdx + 1}</h3>
         <table>
           <tr><th>番号</th><th>名称</th><th>W数</th><th>長さ(m)</th><th>電圧降下(V)</th></tr>
@@ -257,15 +254,24 @@
       warningMsg = `<p class="warning">⚠ トランス使用可能容量（${usableTransformer.toFixed(1)}W / 定格 ${ratedTransformer}W）を超えています！</p>`;
     }
 
-    resultHtml += `<hr><p><b>全体合計消費電力:</b> ${totalW.toFixed(2)} W</p>${warningMsg}`;
-    resultHtml += `<p>作成日: ${new Date().toLocaleDateString()}</p>`;
+    // ✅ 全体結果を最上部に表示
+    resultHtml += `
+      <div id="summary">
+        <p><b>合計消費電力:</b> ${totalW.toFixed(2)} W</p>
+        ${warningMsg}
+
+        <hr>
+      </div>
+    `;
+    resultHtml += circuitsHtml;
+
     document.getElementById("result").innerHTML = resultHtml;
   }
 
   function preparePrint() {
     const project = document.getElementById("projectName").value || "未入力";
     const creator = document.getElementById("creator").value || "未入力";
-    document.getElementById("printProjectInfo").innerText = `物件名：${project}　|　作成担当者：${creator}`;
+    document.getElementById("printProjectInfo").innerText = `物件名：${project}　|　作成担当者：${creator}  | 作成日: ${new Date().toLocaleDateString()}`;
     window.print();
   }
 </script>
