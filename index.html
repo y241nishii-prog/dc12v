@@ -82,7 +82,7 @@
   トランス電圧：<b>DC12V</b>　
   電圧降下定数：<b id="dropConstDisplay">0.00252 V/W・m</b>
 　許容電圧降下：<b id="allowedDropDisplay">1.0V</b><br>
-  トランス容量：
+  トランス定格(W)：
   <select id="transformer">
     <option value="35">35W</option>
     <option value="75">75W</option>
@@ -94,7 +94,7 @@
 <div id="printHeader">
   <img src="三協アルミ_4C透過.png" alt="ロゴ" style="height:35px; vertical-align:middle; margin-right:10px;">
   <span style="font-size:18px; font-weight:bold;">DC12V 電圧降下計算ツール</span><br>
-  <small>
+  <small id="printConstInfo">
     トランス電圧：DC12V　|　電圧降下定数：0.00252　|　許容降下：1.0V
   </small><br>
   <small id="printProjectInfo"></small>
@@ -111,7 +111,7 @@
   <button class="print-btn" onclick="preparePrint()">印刷（PDF保存可）</button>
 </div>
 
-<!-- ✅ 全体結果を常に先頭に表示 -->
+<!-- ✅ 全体結果を常に上に表示 -->
 <div id="result"></div>
 
 </footer>
@@ -259,7 +259,6 @@
       <div id="summary">
         <p><b>合計消費電力:</b> ${totalW.toFixed(2)} W</p>
         ${warningMsg}
-
         <hr>
       </div>
     `;
@@ -268,13 +267,23 @@
     document.getElementById("result").innerHTML = resultHtml;
   }
 
+  // ✅ 印刷ヘッダーにトランス容量を追加
   function preparePrint() {
     const project = document.getElementById("projectName").value || "未入力";
     const creator = document.getElementById("creator").value || "未入力";
-    document.getElementById("printProjectInfo").innerText = `物件名：${project}　|　作成担当者：${creator}  | 作成日: ${new Date().toLocaleDateString()}`;
+    const rated = parseFloat(transformerSelect.value);
+    const usable = rated * TRANSFORMER_USE_RATE;
+
+    document.getElementById("printConstInfo").innerText =
+      `トランス電圧：DC12V　|　電圧降下定数：0.00252　|　許容降下：1.0V　|　トランス容量：${rated}W（使用可能 ${usable.toFixed(1)}W）`;
+
+    document.getElementById("printProjectInfo").innerText =
+      `物件名：${project}　|　作成担当者：${creator}   |　作成日: ${new Date().toLocaleDateString()}`;
+
     window.print();
   }
 </script>
 
 </body>
 </html>
+
