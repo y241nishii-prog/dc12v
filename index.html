@@ -79,7 +79,7 @@
 <div id="printHeader">
   <img src="三協アルミ_4C透過.png" alt="ロゴ" style="height:35px; vertical-align:middle; margin-right:10px;">
   <img src="wonderlight.png" alt="ロゴ" style="height:35px; vertical-align:middle; margin-right:10px;">
-  <span style="font-size:18px; font-weight:bold;">DC12V V_Drop Checker</span><br>
+  <span style="font-size:18px; font-weight:bold;">V_Drop Checker[DC12V_1.25sq]</span><br>
   <small id="printConditions"></small><br>
   <small id="printProjectInfo"></small>
 </div>
@@ -278,7 +278,7 @@
   // --- 6. 計算ロジック (calc) の修正 ---
   function calc() {
     const transformer = parseFloat(document.getElementById("transformer").value);
-    const MAX_DROP = 2.0; // 許容電圧降下
+    const MAX_DROP = 1.0; // 許容電圧降下
     let totalW = 0;
     let lineResults = "";
     let overallResult = "<h2>計算結果</h2>";
