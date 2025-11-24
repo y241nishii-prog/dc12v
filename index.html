@@ -33,10 +33,12 @@
 
   @page { size: A4 portrait; margin: 15mm; }
   @media print {
+    /* 操作要素を非表示 */
     button, header, #circuits, #conditions, #projectInfo { display: none !important; }
+    
+    /* 印刷ヘッダー: position: fixed を削除し、コンテンツが2ページ目以降も流れるようにする */
     #printHeader {
       display: block !important;
-      position: fixed; 
       top: 0; 
       left: 0; 
       width: 100%;
@@ -44,7 +46,16 @@
       border-bottom: 2px solid #ccc;
       padding: 5px 15px;
     }
-    #result { margin-top: 130px; }
+    
+    /* 1ページ目の計算結果タイトルにのみ上余白を設定し、ヘッダーとの重なりを解消 */
+    #result h2:first-child { 
+        margin-top: 130px;
+    }
+    
+    /* 大きなブロックが途中で切れないように設定 */
+    .circuit, .branch, table {
+        page-break-inside: avoid;
+    }
   }
   #printHeader { display: none; }
 </style>
@@ -52,7 +63,7 @@
 <body>
 
 <header>
-  <img src="wonderlight.png" alt="ロゴ">
+  <img src="miraria.png" alt="ロゴ">
   <h1>V_Drop Checker[DC12V_1.25sq]</h1>
 </header>
 
@@ -66,19 +77,19 @@
   <strong>■ 条件設定</strong><br>
   トランス電圧：<b>DC12V</b>　
   電源コード：<b>7.5mmコード(1.25sq)</b>　
-  電圧降下：<b>0.00252 V/W･m</b>　　
+  電圧降下量：<b>0.00252 V/W･m</b>　　
   許容電圧降下：<b>1.0V</b><br>
-  トランス容量（使用可能容量70%）：
+  トランス容量：
   <select id="transformer">
     <option value="35">35W</option>
     <option value="75">75W</option>
   </select>
-  <small>(※計算ではトランス容量の70%を使用)</small>
+  <small>（使用可能容量：定格W × 70%）</small>
 </div>
 
 <div id="printHeader">
   <img src="三協アルミ_4C透過.png" alt="ロゴ" style="height:35px; vertical-align:middle; margin-right:10px;">
-  <img src="wonderlight.png" alt="ロゴ" style="height:35px; vertical-align:middle; margin-right:10px;">
+  <img src="miraria.png" alt="ロゴ" style="height:35px; vertical-align:middle; margin-right:10px;">
   <span style="font-size:18px; font-weight:bold;">V_Drop Checker[DC12V_1.25sq]</span><br>
   <small id="printConditions"></small><br>
   <small id="printProjectInfo"></small>
@@ -98,13 +109,15 @@
 <div id="result"></div>
 
 <script>
+  // DC12V用定数
   const DROP_PER_M = 0.00252;
+  const USABLE_CAPACITY_RATIO = 0.7; // DC12Vは通常定格の70%で使用
   const MAX_CIRCUITS = 4;
   const MAX_BRANCHES = 4;
-  const MAX_SUB_BRANCHES = 4; // ★新規追加：サブ分岐の最大数
+  const MAX_SUB_BRANCHES = 4; // サブ分岐の最大数
   const circuitsDiv = document.getElementById("circuits");
 
-  // --- 1. ラインの追加/削除/更新 (元のコードから変更なし) ---
+  // --- 1. ラインの追加/削除/更新 ---
   function addCircuit() {
     if (circuitsDiv.children.length >= MAX_CIRCUITS) {
       alert("最大4ラインまで追加できます。");
@@ -140,7 +153,7 @@
     });
   }
 
-  // --- 2. 最上位分岐の追加/削除/更新 (HTML構造を変更) ---
+  // --- 2. 最上位分岐の追加/削除/更新 ---
   function addBranch(btn) {
     const branchesDiv = btn.parentNode.querySelector(".branches");
     const circuitIndex = Array.from(circuitsDiv.children).indexOf(btn.closest(".circuit")) + 1;
@@ -189,7 +202,7 @@
     });
   }
 
-  // --- 3. ★サブ分岐（２段階目）の追加/削除★ ---
+  // --- 3. サブ分岐（２段階目）の追加/削除 ---
   function addSubBranch(btn) {
       const subBranchesDiv = btn.parentNode.querySelector(".sub-branches");
       const subBranchIndex = subBranchesDiv.children.length + 1;
@@ -241,7 +254,7 @@
     updateLampNumbers(tbody);
   }
 
-  // --- 5. ★サブ分岐に接続される照明の追加/削除★ (新規追加) ---
+  // --- 5. サブ分岐に接続される照明の追加/削除 ---
   function addLampToSubBranch(btn) {
     const tbody = btn.closest(".sub-lamps-container").querySelector(".sub-lamps-tbody");
     const tr = createLampRow(tbody.children.length + 1, 'removeLampFromSubBranch(this)');
@@ -275,9 +288,10 @@
     });
   }
 
-  // --- 6. 計算ロジック (calc) の修正 ---
+  // --- 6. 計算ロジック (calc) ---
   function calc() {
-    const transformer = parseFloat(document.getElementById("transformer").value);
+    const transformerRated = parseFloat(document.getElementById("transformer").value);
+    const transformer = transformerRated * USABLE_CAPACITY_RATIO; // 使用可能容量
     const MAX_DROP = 1.0; // 許容電圧降下
     let totalW = 0;
     let lineResults = "";
@@ -292,7 +306,7 @@
       let circuitHtml = `<h3>ライン ${cIdx + 1}</h3>`;
       const branches = c.querySelectorAll(".branch");
       
-      // ★ライン全体の合計W数を計算 (サブ分岐内の照明W数も合算)★
+      // ライン全体の合計W数を計算 (サブ分岐内の照明W数も合算)
       branches.forEach(b => {
           // 1. 最上位分岐に直接接続の照明W数
           b.querySelector(".direct-lamps").querySelectorAll("tr").forEach(r => {
@@ -342,7 +356,7 @@
             </tr>`;
         });
         
-        // --- B. ★サブ分岐内の照明のWとLenを合算★ ---
+        // --- B. サブ分岐内の照明のWとLenを合算 ---
         const subBranches = b.querySelectorAll(".sub-branch");
         let subBranchHtml = "";
         subBranches.forEach((sb, idx) => {
@@ -430,19 +444,21 @@
 
     overallResult += `<p><b>消費電力合計 (全ライン):</b> ${totalW.toFixed(1)} W</p>`;
     if (totalW > transformer) {
-      overallWarning += `<p class="warning">⚠ トランス容量（${transformer}W）を超えています！</p>`;
+      overallWarning += `<p class="warning">⚠ トランス容量（${transformerRated}W / 使用可能容量${transformer.toFixed(1)}W）を超えています！</p>`;
     }
 
     document.getElementById("result").innerHTML = overallResult + overallWarning + lineResults;
   }
 
-  // --- 7. 印刷処理 (変更なし) ---
+  // --- 7. 印刷処理 ---
   function preparePrint() {
     const project = document.getElementById("projectName").value || "未入力";
     const creator = document.getElementById("creator").value || "未入力";
-    const transformer = document.getElementById("transformer").value;
+    const transformerRated = document.getElementById("transformer").value;
+    const transformerUsable = (parseFloat(transformerRated) * USABLE_CAPACITY_RATIO).toFixed(1);
+
     document.getElementById("printConditions").innerText =
-      `トランス電圧：DC24V　|電源コード：7.5mmコード(1.25sq)　|　電圧降下量：0.00252V/W･m　|　許容電圧降下：1.0V　|　トランス容量：${transformer}W`;
+      `トランス電圧：DC12V　|電源コード：7.5mmコード(1.25sq)　|　電圧降下量：${DROP_PER_M} V/W･m　|　許容電圧降下：1.0V　|　トランス容量：${transformerRated}W（使用可能容量${transformerUsable}W）`;
     document.getElementById("printProjectInfo").innerText =
       `物件名：${project}　|　作成担当者：${creator}  |　作成日: ${new Date().toLocaleDateString()}`;
     window.print();
