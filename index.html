@@ -171,7 +171,7 @@
       </h3>
       <div class="branch-content" style="border: 1px dashed #007bff; padding: 10px; margin-top: 5px;">
           
-          <h4 style="margin-top: 0px;">▼ 接続照明（分岐点から配線）</h4>
+          <h4 style="margin-top: 0px;">▼ 上位分岐（分岐点から配線）</h4>
           <table>
             <thead>
               <tr><th>番号</th><th>名称・記号</th><th>消費電力(W)</th><th>コード長さ(m)</th><th>操作</th></tr>
@@ -180,7 +180,7 @@
           </table>
           <button class="add-btn" onclick="addLamp(this)">＋ 照明追加</button>
 
-          <h4 style="margin-top: 15px;">▼ サブ分岐（分岐点から配線）</h4>
+          <h4 style="margin-top: 15px;">▼ 下位分岐（分岐点から配線）</h4>
           <div class="sub-branches"></div>
           <button class="add-btn" onclick="addSubBranch(this)">＋ サブ分岐追加</button>
           
@@ -204,13 +204,13 @@
     });
   }
 
-  // --- 3. サブ分岐（２段階目）の追加/削除 ---
+  // --- 3. 下位分岐（分岐点から配線）の追加/削除 ---
   function addSubBranch(btn) {
       const subBranchesDiv = btn.parentNode.querySelector(".sub-branches");
       const subBranchIndex = subBranchesDiv.children.length + 1;
       
       if (subBranchesDiv.children.length >= MAX_SUB_BRANCHES) {
-        alert("サブ分岐は最大4つまでです。");
+        alert("下位分岐は最大4つまでです。");
         return;
       }
 
@@ -222,7 +222,7 @@
       subBranchWrapper.style.marginBottom = "10px";
       
       subBranchWrapper.innerHTML = `
-        <h5 style="margin: 5px 0;">サブ分岐 ${subBranchIndex}
+        <h5 style="margin: 5px 0;">下位分岐 ${subBranchIndex}
           <button class="remove-btn" onclick="removeSubBranch(this)" style="font-size: 10px; padding: 2px 4px;">削除</button>
         </h5>
         
@@ -262,7 +262,7 @@
     updateLampNumbers(tbody);
   }
 
-  // --- 5. サブ分岐に接続される照明の追加/削除 ---
+  // --- 5. 下位分岐に接続される照明の追加/削除 ---
   function addLampToSubBranch(btn) {
     const tbody = btn.closest(".sub-lamps-container").querySelector(".sub-lamps-tbody");
     const tr = createLampRow(tbody.children.length + 1, 'removeLampFromSubBranch(this)'); 
@@ -333,7 +333,7 @@
       
       circuitHtml += `<p>
         <b>ライン${cIdx + 1} 消費電力合計:</b> ${circuitTotalW.toFixed(1)} W<br>
-        <b>トランス〜分岐点までの電圧降下 (e_trans):</b> ${circuitTotalW.toFixed(1)} W × ${lenToBranch.toFixed(1)} m × ${DROP_PER_M} V/W・m = <b>${dropE_trans.toFixed(3)} V</b>
+        <b>トランス〜分岐点までの電圧降下:</b> ${circuitTotalW.toFixed(1)} W × ${lenToBranch.toFixed(1)} m × ${DROP_PER_M} V/W・m = <b>${dropE_trans.toFixed(3)} V</b>
       </p>`;
 
       branches.forEach((b, bIdx) => {
@@ -368,7 +368,7 @@
         const dropE_direct = directW * directLen * DROP_PER_M; // e_direct
 
         branchHtml += `
-          <h5>直接接続照明 (分岐点以降の降下 $e_{direct}$)</h5>
+          <h5>上位分岐</h5>
           <table>
             <thead>
               <tr><th>番号</th><th>品名・名称</th><th>W数</th><th>コード長さ(m)</th></tr>
@@ -376,17 +376,17 @@
             <tbody>${directLampRows}</tbody>
           </table>
           <p style="margin-left: 10px;">
-            **直接接続 W合計:** ${directW.toFixed(1)} W / 
-            **コード長合計:** ${directLen.toFixed(1)} m<br>
-            **電圧降下 $e_{direct}$:** ${directW.toFixed(1)} W × ${directLen.toFixed(1)} m × ${DROP_PER_M} V/W・m = **${dropE_direct.toFixed(3)} V**
+            **この分岐のW合計: ${directW.toFixed(1)} W / 
+            **分岐以降のコード長合計: ${directLen.toFixed(1)} m<br>
+            **分岐以降の電圧降下: ${directW.toFixed(1)} W × ${directLen.toFixed(1)} m × ${DROP_PER_M} V/W・m = **${dropE_direct.toFixed(3)} V
           </p>
         `;
 
-        // --- B. サブ分岐の計算 (e_main + e_sub) ---
+        // --- B. 下位分岐の計算 (e_main + e_sub) ---
         const subBranches = b.querySelectorAll(".sub-branch");
         let subBranchHtml = "";
 
-        // この最上位分岐内の全サブ分岐の合計Wを計算する (幹線に乗る総負荷)
+        // この最上位分岐内の全分岐の合計Wを計算する (幹線に乗る総負荷)
         let totalSubBranchW = 0;
         subBranches.forEach(sb => {
             sb.querySelectorAll(".sub-lamps-tbody tr").forEach(r => {
@@ -416,7 +416,7 @@
                     </tr>`;
             });
 
-            // 2-1. 幹線電圧降下 (e_main) - 総サブ分岐W (totalSubBranchW) で計算
+            // 2-1. 幹線電圧降下 (e_main) - 総分岐W (totalSubBranchW) で計算
             const dropE_main = totalSubBranchW * lenToSubBranch * DROP_PER_M;
             if (dropE_main > maxE_main_val) {
                 maxE_main_val = dropE_main; // 最大e_mainの更新
@@ -432,12 +432,12 @@
             const dropTotal_Sub = dropE_main + dropE_sub;
 
             subBranchHtml += `
-              <h5 style="margin-top: 10px; margin-left: 10px;">サブ分岐 ${idx + 1} の降下 ($e_{main} + e_{sub}$)</h5>
+              <h5 style="margin-top: 10px; margin-left: 10px;">下位分岐 ${idx + 1} の降下 ($e_{main} + e_{sub}$)</h5>
               
               <p style="margin-left: 10px; font-size: 13px;">
-                **最上位分岐点から流れる総サブ分岐負荷W**: ${totalSubBranchW.toFixed(1)} W<br>
-                **幹線長さ** ($L_{main}$): ${lenToSubBranch.toFixed(1)} m<br>
-                **幹線降下 ($e_{main}$):** ${totalSubBranchW.toFixed(1)} W × ${lenToSubBranch.toFixed(1)} m × ${DROP_PER_M} V/W・m = **${dropE_main.toFixed(3)} V**
+                **上位分岐点から流れる総サブ分岐負荷W: ${totalSubBranchW.toFixed(1)} W<br>
+                **幹線長さ: ${lenToSubBranch.toFixed(1)} m<br>
+                **幹線降下: ${totalSubBranchW.toFixed(1)} W × ${lenToSubBranch.toFixed(1)} m × ${DROP_PER_M} V/W・m = ${dropE_main.toFixed(3)} V
               </p>
 
               <table style="width: 95%; margin-left: 10px;">
@@ -446,10 +446,10 @@
               </table>
 
               <p style="margin-left: 10px; font-size: 13px;">
-                **このサブ分岐回路の負荷W**: ${subBranchTotalW.toFixed(1)} W<br>
-                **サブ分岐点以降のコード長合計** ($L_{sub}$): ${subBranchTotalLen.toFixed(1)} m<br>
-                **サブ分岐点以降の降下 ($e_{sub}$):** ${subBranchTotalW.toFixed(1)} W × ${subBranchTotalLen.toFixed(1)} m × ${DROP_PER_M} V/W・m = **${dropE_sub.toFixed(3)} V**<br>
-                **サブ分岐の合計降下 ($e_{main} + e_{sub}$):** ${dropE_main.toFixed(3)} V + ${dropE_sub.toFixed(3)} V = **${dropTotal_Sub.toFixed(3)} V**
+                **この分岐回路の負荷W: ${subBranchTotalW.toFixed(1)} W<br>
+                **分岐点以降のコード長合計: ${subBranchTotalLen.toFixed(1)} m<br>
+                **分岐点以降の降下: ${subBranchTotalW.toFixed(1)} W × ${subBranchTotalLen.toFixed(1)} m × ${DROP_PER_M} V/W・m = ${dropE_sub.toFixed(3)} V<br>
+                **分岐の合計降下: ${dropE_main.toFixed(3)} V + ${dropE_sub.toFixed(3)} V = ${dropTotal_Sub.toFixed(3)} V
               </p>
             `;
         });
@@ -477,12 +477,12 @@
         if (dropE_direct > maxSubPathDrop) {
             // 最大ドロップが直接接続経由の場合
             maxDropBreakdown = `${dropE_direct.toFixed(3)} V (e_{direct})`;
-            finalSummation = `${dropE_trans.toFixed(3)} V (e_{trans}) + ${branchMaxDrop.toFixed(3)} V (${branchDropName})`;
+            finalSummation = `${dropE_trans.toFixed(3)} V  + ${branchMaxDrop.toFixed(3)} V `;
         } else {
             // 最大ドロップがサブ分岐経由の最大経路の場合
-            maxDropBreakdown = `${maxE_main_val.toFixed(3)} V (e_{main}) + ${maxE_sub_val.toFixed(3)} V (e_{sub})`;
+            maxDropBreakdown = `${maxE_main_val.toFixed(3)} V + ${maxE_sub_val.toFixed(3)} V`;
             // 3項の合計として表示
-            finalSummation = `${dropE_trans.toFixed(3)} V (e_{trans}) + ${maxE_main_val.toFixed(3)} V (e_{main}) + ${maxE_sub_val.toFixed(3)} V (e_{sub})`;
+            finalSummation = `${dropE_trans.toFixed(3)} V + ${maxE_main_val.toFixed(3)} V + ${maxE_sub_val.toFixed(3)} V`;
         }
 
 
@@ -495,14 +495,12 @@
 
           <p>
             <b>最上位分岐点以降の最大電圧降下:</b> 
-            <span class="${branchMaxDrop > MAX_DROP - dropE_trans ? "warning" : ""}">**${branchMaxDrop.toFixed(3)} V**</span> 
-            (e_directと最大e_main+最大e_subの最大値)
+            <span class="${branchMaxDrop > MAX_DROP - dropE_trans ? "warning" : ""}">${branchMaxDrop.toFixed(3)} V</span> 
             <br>
-            *最大降下パス内訳*: ${maxDropBreakdown}
           </p>
           <p>
-            **電圧降下合計 (トランス〜最終点):** ${finalSummation} = 
-            <span class="${dropClassFinal}">**${finalTotalDrop.toFixed(3)} V**</span>
+            **電圧降下合計 (トランス〜最終点): ${finalSummation} = 
+            <span class="${dropClassFinal}">${finalTotalDrop.toFixed(3)} V</span>
           </p>
           <hr>
         `;
